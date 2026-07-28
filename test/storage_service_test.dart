@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gym_app/models/progress_entry.dart';
-import 'package:gym_app/models/user_profile.dart';
-import 'package:gym_app/services/secure_key_value_store.dart';
-import 'package:gym_app/services/storage_service.dart';
+import 'package:fitforge_ai/models/progress_entry.dart';
+import 'package:fitforge_ai/models/user_profile.dart';
+import 'package:fitforge_ai/services/secure_key_value_store.dart';
+import 'package:fitforge_ai/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

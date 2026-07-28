@@ -1,11 +1,11 @@
 {
-    "name": "gym_app",
-    "short_name": "gym_app",
+    "name": "FitForge AI",
+    "short_name": "FitForge",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0F0F23",
+    "theme_color": "#0F0F23",
+    "description": "Personalized fitness guidance and progress tracking.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

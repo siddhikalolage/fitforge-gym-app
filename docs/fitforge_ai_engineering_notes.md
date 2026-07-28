@@ -22,7 +22,7 @@ All implementation work should favor clean architecture, modular responsibilitie
 
 ## Current MVP Scope
 
-The current Flutter app provides local onboarding, BMI calculation, personalized workout and diet recommendations, profile reset, and basic progress tracking using SharedPreferences. It is not yet a full AI/backend platform and does not currently include authentication, backend APIs, payments, trainer/gym owner portals, real AI provider integration, or production monitoring.
+The current Flutter app provides local onboarding, BMI calculation, personalized workout and diet recommendations, profile reset, and basic progress tracking. Sensitive profile and progress data are stored through secure local storage, with SharedPreferences retained only for legacy migration and non-sensitive simple values. It is not yet a full AI/backend platform and does not currently include authentication, backend APIs, payments, trainer/gym owner portals, real AI provider integration, or production monitoring.
 
 ## Stability Pass Completed
 
@@ -33,11 +33,13 @@ The current Flutter app provides local onboarding, BMI calculation, personalized
 - Dashboard progress logging validates weight input, disposes its text controller, and guards async state updates.
 - Missing-profile recovery now routes users back to onboarding.
 - Corrupted/non-portable UI separators were replaced with source-safe text or Material icons.
+- Sensitive profile and progress storage was moved behind a secure-storage abstraction.
+- Onboarding now asks for consent before saving profile/progress data locally.
 
 ## Next Recommended Increments
 
 1. Add unit and widget tests for profile parsing, storage recovery, onboarding validation, recommendation outputs, and dashboard progress logging.
 2. Introduce a cleaner folder structure with domain, data, and presentation boundaries before adding backend or AI integrations.
 3. Add structured models for workout plans, nutrition plans, recovery scores, and AI-generated outputs.
-4. Replace local-only persistence with repositories so SharedPreferences can remain an offline implementation detail.
+4. Replace local-only persistence with repositories so secure storage and SharedPreferences migration remain implementation details.
 5. Add authentication and role models only when a backend boundary exists.

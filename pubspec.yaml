@@ -1,5 +1,5 @@
-name: gym_app
-description: A personalized gym application providing BMI-based exercise and diet plans.
+name: fitforge_ai
+description: A personalized fitness application providing BMI-based exercise and diet plans.
 publish_to: 'none'
 version: 1.0.0+1
 
