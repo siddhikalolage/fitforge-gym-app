@@ -111,6 +111,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required double? weight,
   }) {
     if (name.isEmpty) return 'Please enter your name';
+    if (name.length > 100) return 'Please keep your name under 100 characters';
     if (age == null || age < 13 || age > 100) {
       return 'Please enter an age between 13 and 100';
     }

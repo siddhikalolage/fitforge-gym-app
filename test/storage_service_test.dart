@@ -63,6 +63,53 @@ void main() {
     expect(await service.getUserProfile(), isNull);
     expect(await secureStore.containsKey('user_profile'), isFalse);
   });
+
+  test('rejects an invalid profile before writing secure storage', () async {
+    SharedPreferences.setMockInitialValues({});
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final secureStore = InMemorySecureKeyValueStore();
+    final service = StorageService.test(
+      secureStore: secureStore,
+      legacyPreferences: legacyPrefs,
+    );
+    final invalidProfile = UserProfile(
+      name: 'Asha',
+      age: 12,
+      height: 170,
+      weight: 72,
+      gender: 'female',
+      activityLevel: 'moderate',
+      goal: 'maintain',
+    );
+
+    await expectLater(
+      service.saveUserProfile(invalidProfile),
+      throwsArgumentError,
+    );
+    expect(await secureStore.containsKey('user_profile'), isFalse);
+  });
+
+  test('rejects an invalid progress entry before writing secure storage',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final secureStore = InMemorySecureKeyValueStore();
+    final service = StorageService.test(
+      secureStore: secureStore,
+      legacyPreferences: legacyPrefs,
+    );
+    final invalidEntry = ProgressEntry(
+      date: DateTime(2026, 7, 14),
+      weight: 0,
+      bmi: 24.9,
+    );
+
+    await expectLater(
+      service.saveProgressEntry(invalidEntry),
+      throwsArgumentError,
+    );
+    expect(await secureStore.containsKey('progress_history'), isFalse);
+  });
 }
 
 UserProfile _profile() {

@@ -47,6 +47,7 @@ class StorageService {
   }
 
   Future<void> saveUserProfile(UserProfile profile) async {
+    profile.validate();
     await _ready;
     await _secureStore.write(_userProfileKey, jsonEncode(profile.toJson()));
   }
@@ -65,6 +66,7 @@ class StorageService {
   }
 
   Future<void> saveProgressEntry(ProgressEntry entry) async {
+    entry.validate();
     final entries = await getProgressHistory();
     entries.add(entry);
     final jsonList = entries.map((e) => e.toJson()).toList();
