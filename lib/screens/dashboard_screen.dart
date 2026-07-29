@@ -19,6 +19,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _storageService = StorageService();
   List<ProgressEntry> _history = [];
   bool _loading = true;
+  String? _historyError;
 
   @override
   void initState() {
@@ -27,12 +28,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadHistory() async {
-    final history = await _storageService.getProgressHistory();
-    if (!mounted) return;
-    setState(() {
-      _history = history;
-      _loading = false;
-    });
+    try {
+      final history = await _storageService.getProgressHistory();
+      if (!mounted) return;
+      setState(() {
+        _history = history;
+        _historyError = null;
+        _loading = false;
+      });
+    } on StorageServiceException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _history = [];
+        _historyError = error.message;
+        _loading = false;
+      });
+    }
   }
 
   void _logProgress() {
@@ -111,10 +122,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   bmi: weight / (heightM * heightM),
                 );
 
-                Navigator.pop(ctx);
-                await _storageService.saveProgressEntry(entry);
-                if (!mounted) return;
-                await _loadHistory();
+                try {
+                  await _storageService.saveProgressEntry(entry);
+                  if (!mounted || !ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  await _loadHistory();
+                } on StorageServiceException catch (error) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error.message)),
+                  );
+                } on ArgumentError {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please enter a valid weight'),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orangeAccent,
@@ -149,6 +174,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildQuickStats(waterIntake),
                 const SizedBox(height: 16),
 
+                if (_historyError != null) ...[
+                  _buildHistoryError(),
+                  const SizedBox(height: 16),
+                ],
+
                 // BMI Category card
                 _buildBMICategoryCard(bmi, bmiCategory),
                 const SizedBox(height: 16),
@@ -162,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton.icon(
-                    onPressed: _logProgress,
+                    onPressed: _historyError == null ? _logProgress : null,
                     icon: const Icon(Icons.add),
                     label: const Text(
                       'Log Today\'s Progress',
@@ -541,6 +571,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   maxY: _getMaxWeight(displayHistory) + 2,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryError() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Progress history unavailable',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _historyError!,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _loadHistory,
+              child: const Text('Retry'),
             ),
           ],
         ),

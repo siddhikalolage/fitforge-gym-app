@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _storageService = StorageService();
   UserProfile? _profile;
   bool _loading = true;
+  String? _loadError;
   int _currentTab = 0;
 
   @override
@@ -27,12 +28,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final profile = await _storageService.getUserProfile();
-    if (!mounted) return;
-    setState(() {
-      _profile = profile;
-      _loading = false;
-    });
+    try {
+      final profile = await _storageService.getUserProfile();
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _loadError = null;
+        _loading = false;
+      });
+    } on StorageServiceException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.message;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -40,6 +50,42 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Profile unavailable',
+                  style: TextStyle(color: Colors.white, fontSize: 22),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _loadError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _loading = true;
+                      _loadError = null;
+                    });
+                    _loadProfile();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

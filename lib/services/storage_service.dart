@@ -4,6 +4,34 @@ import '../models/user_profile.dart';
 import '../models/progress_entry.dart';
 import 'secure_key_value_store.dart';
 
+class StorageServiceException implements Exception {
+  final String message;
+
+  const StorageServiceException._(this.message);
+
+  static const initialization = StorageServiceException._(
+    'Secure local storage is unavailable. Please restart the app and try again.',
+  );
+  static const saveProfile = StorageServiceException._(
+    'Unable to save your profile securely. Please try again.',
+  );
+  static const loadProfile = StorageServiceException._(
+    'Unable to load your profile securely. Please try again.',
+  );
+  static const saveProgress = StorageServiceException._(
+    'Unable to save progress securely. Please try again.',
+  );
+  static const loadProgress = StorageServiceException._(
+    'Unable to load progress securely. Please try again.',
+  );
+  static const reset = StorageServiceException._(
+    'Unable to delete local data securely. Please try again.',
+  );
+
+  @override
+  String toString() => 'StorageServiceException: $message';
+}
+
 class StorageService {
   static const String _userProfileKey = 'user_profile';
   static const String _progressHistoryKey = 'progress_history';
@@ -27,7 +55,12 @@ class StorageService {
 
   Future<void> init() async {
     _initFuture ??= _initialize();
-    await _initFuture;
+    try {
+      await _initFuture;
+    } catch (_) {
+      _initFuture = null;
+      throw StorageServiceException.initialization;
+    }
   }
 
   Future<void> _initialize() async {
@@ -42,40 +75,71 @@ class StorageService {
   }
 
   Future<bool> hasUserProfile() async {
-    await _ready;
-    return _secureStore.containsKey(_userProfileKey);
+    try {
+      await _ready;
+      return _secureStore.containsKey(_userProfileKey);
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.loadProfile;
+    }
   }
 
   Future<void> saveUserProfile(UserProfile profile) async {
     profile.validate();
-    await _ready;
-    await _secureStore.write(_userProfileKey, jsonEncode(profile.toJson()));
+    try {
+      await _ready;
+      await _secureStore.write(_userProfileKey, jsonEncode(profile.toJson()));
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.saveProfile;
+    }
   }
 
   Future<UserProfile?> getUserProfile() async {
-    await _ready;
-    final data = await _secureStore.read(_userProfileKey);
+    String? data;
+    try {
+      await _ready;
+      data = await _secureStore.read(_userProfileKey);
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.loadProfile;
+    }
     if (data == null) return null;
 
     try {
       return UserProfile.fromJson(jsonDecode(data) as Map<String, dynamic>);
     } catch (_) {
-      await _secureStore.delete(_userProfileKey);
+      try {
+        await _secureStore.delete(_userProfileKey);
+      } catch (_) {
+        throw StorageServiceException.loadProfile;
+      }
       return null;
     }
   }
 
   Future<void> saveProgressEntry(ProgressEntry entry) async {
     entry.validate();
-    final entries = await getProgressHistory();
-    entries.add(entry);
-    final jsonList = entries.map((e) => e.toJson()).toList();
-    await _secureStore.write(_progressHistoryKey, jsonEncode(jsonList));
+    try {
+      final entries = await getProgressHistory();
+      entries.add(entry);
+      final jsonList = entries.map((e) => e.toJson()).toList();
+      await _secureStore.write(_progressHistoryKey, jsonEncode(jsonList));
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.saveProgress;
+    }
   }
 
   Future<List<ProgressEntry>> getProgressHistory() async {
-    await _ready;
-    final data = await _secureStore.read(_progressHistoryKey);
+    String? data;
+    try {
+      await _ready;
+      data = await _secureStore.read(_progressHistoryKey);
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.loadProgress;
+    }
     if (data == null) return [];
 
     try {
@@ -84,16 +148,25 @@ class StorageService {
           .map((e) => ProgressEntry.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (_) {
-      await _secureStore.delete(_progressHistoryKey);
+      try {
+        await _secureStore.delete(_progressHistoryKey);
+      } catch (_) {
+        throw StorageServiceException.loadProgress;
+      }
       return [];
     }
   }
 
   Future<void> resetAll() async {
-    final prefs = await _ready;
-    await _secureStore.deleteAll();
-    await prefs.remove(_userProfileKey);
-    await prefs.remove(_progressHistoryKey);
+    try {
+      final prefs = await _ready;
+      await _secureStore.deleteAll();
+      await prefs.remove(_userProfileKey);
+      await prefs.remove(_progressHistoryKey);
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.reset;
+    }
   }
 
   Future<void> _migrateLegacyValue(SharedPreferences prefs, String key) async {

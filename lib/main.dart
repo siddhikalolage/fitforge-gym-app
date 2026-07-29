@@ -16,17 +16,27 @@ void main() async {
   ));
 
   final storageService = StorageService();
-  await storageService.init();
+  var hasUser = false;
+  String? startupError;
+  try {
+    await storageService.init();
+    hasUser = await storageService.hasUserProfile();
+  } on StorageServiceException catch (error) {
+    startupError = error.message;
+  }
 
-  final hasUser = await storageService.hasUserProfile();
-
-  runApp(GymApp(hasUser: hasUser));
+  runApp(GymApp(hasUser: hasUser, startupError: startupError));
 }
 
 class GymApp extends StatelessWidget {
   final bool hasUser;
+  final String? startupError;
 
-  const GymApp({super.key, required this.hasUser});
+  const GymApp({
+    super.key,
+    required this.hasUser,
+    this.startupError,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +82,52 @@ class GymApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Colors.white60, fontSize: 14),
         ),
       ),
-      home: hasUser ? const HomeScreen() : const OnboardingScreen(),
+      home: startupError == null
+          ? (hasUser ? const HomeScreen() : const OnboardingScreen())
+          : StorageFailureScreen(message: startupError!),
+    );
+  }
+}
+
+class StorageFailureScreen extends StatelessWidget {
+  final String message;
+
+  const StorageFailureScreen({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                color: Colors.orangeAccent,
+                size: 64,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Secure storage unavailable',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: const TextStyle(color: Colors.white70),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

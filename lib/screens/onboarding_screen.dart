@@ -96,7 +96,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       goal: _goal,
     );
 
-    await _storageService.saveUserProfile(profile);
+    try {
+      await _storageService.saveUserProfile(profile);
+    } on StorageServiceException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      return;
+    } on ArgumentError {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please review your details and try again'),
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(

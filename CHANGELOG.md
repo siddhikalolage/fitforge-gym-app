@@ -7,3 +7,4 @@
 - Add repository status, security, and delivery documentation.
 - Add continuous integration checks for formatting, analysis, and tests.
 - Add domain validation before profile and progress data is persisted.
+- Handle secure-storage failures without exposing platform error details or navigating after failed writes.

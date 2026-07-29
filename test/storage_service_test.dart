@@ -110,6 +110,45 @@ void main() {
     );
     expect(await secureStore.containsKey('progress_history'), isFalse);
   });
+
+  test('hides profile storage failures behind a safe exception', () async {
+    SharedPreferences.setMockInitialValues({});
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final service = StorageService.test(
+      secureStore: FailingSecureKeyValueStore(),
+      legacyPreferences: legacyPrefs,
+    );
+
+    try {
+      await service.saveUserProfile(_profile());
+      fail('Expected profile storage failure');
+    } on StorageServiceException catch (error) {
+      expect(error.message, StorageServiceException.saveProfile.message);
+      expect(error.toString(), isNot(contains('platform detail')));
+    }
+  });
+
+  test('hides progress storage failures behind a safe exception', () async {
+    SharedPreferences.setMockInitialValues({});
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final service = StorageService.test(
+      secureStore: FailingSecureKeyValueStore(),
+      legacyPreferences: legacyPrefs,
+    );
+    final entry = ProgressEntry(
+      date: DateTime(2026, 7, 14),
+      weight: 72,
+      bmi: 24.9,
+    );
+
+    try {
+      await service.saveProgressEntry(entry);
+      fail('Expected progress storage failure');
+    } on StorageServiceException catch (error) {
+      expect(error.message, StorageServiceException.saveProgress.message);
+      expect(error.toString(), isNot(contains('platform detail')));
+    }
+  });
 }
 
 UserProfile _profile() {
@@ -146,5 +185,24 @@ class InMemorySecureKeyValueStore implements SecureKeyValueStore {
   @override
   Future<void> write(String key, String value) async {
     _data[key] = value;
+  }
+}
+
+class FailingSecureKeyValueStore implements SecureKeyValueStore {
+  @override
+  Future<bool> containsKey(String key) async => false;
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deleteAll() async {}
+
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write(String key, String value) async {
+    throw StateError('platform detail');
   }
 }
