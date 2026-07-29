@@ -54,8 +54,6 @@ flutter run -d chrome
 
 ## Immediate Next Work
 
-1. Stabilize validation, error handling, and test coverage.
-2. Add profile editing and privacy/data controls.
-3. Configure release signing outside source control.
-4. Introduce Supabase Auth, RLS, and repository boundaries.
-5. Expand progress tracking for water, sleep, steps, workouts, and nutrition compliance.
+1. Configure release signing outside source control.
+2. Introduce Supabase Auth, RLS, and repository boundaries.
+3. Expand progress tracking for water, sleep, steps, workouts, and nutrition compliance.

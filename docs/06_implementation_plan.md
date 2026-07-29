@@ -18,13 +18,16 @@ Implemented:
 - Progress logging.
 - Secure local storage for profile/progress.
 - Privacy consent.
+- Profile editing.
+- Privacy/data controls.
+- Versioned local data export.
+- Confirmed local data deletion.
 - Web and Android platform folders.
 - Basic tests for onboarding and secure storage migration.
 
 Not implemented:
 
 - Clean Architecture.
-- Profile editing.
 - Expanded progress tracking.
 - Backend.
 - Authentication.
@@ -80,16 +83,16 @@ Goal: make the app useful enough for real user testing.
 
 Tasks:
 
-1. Add profile editing.
+1. Add profile editing. Completed with model validation and secure persistence.
 2. Add water logging.
 3. Add sleep logging.
 4. Add steps logging.
 5. Add workout completion tracking.
 6. Add diet-followed tracking.
 7. Expand dashboard cards and charts.
-8. Add privacy/data controls screen.
-9. Add local data export.
-10. Add local data delete confirmation.
+8. Add privacy/data controls screen. Completed with local-storage disclosure and actions.
+9. Add local data export. Completed with versioned JSON shared through the system share sheet.
+10. Add local data delete confirmation. Completed with secure and legacy-key deletion coverage.
 
 Exit criteria:
 
@@ -178,10 +181,10 @@ Exit criteria:
 
 Recommended next sprint:
 
-1. Android package/app identity cleanup.
-2. Android backup security configuration.
-3. Documentation updates for secure storage.
-4. README rewrite.
-5. Run tests and Android debug launch.
+1. Define Supabase development schema and migration ownership.
+2. Define Auth onboarding and account-deletion behavior.
+3. Write RLS policies for user-owned profile and progress rows.
+4. Add repository interfaces before connecting screens to Supabase.
+5. Run local Supabase security and ownership tests.
 
 This sprint is small, necessary, and directly supports the goal of building a trustworthy Android startup product.

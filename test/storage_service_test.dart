@@ -149,6 +149,56 @@ void main() {
       expect(error.toString(), isNot(contains('platform detail')));
     }
   });
+
+  test('exports profile and progress data without storage metadata', () async {
+    SharedPreferences.setMockInitialValues({});
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final secureStore = InMemorySecureKeyValueStore();
+    final service = StorageService.test(
+      secureStore: secureStore,
+      legacyPreferences: legacyPrefs,
+    );
+    final progress = ProgressEntry(
+      date: DateTime(2026, 7, 14),
+      weight: 72,
+      bmi: 24.9,
+    );
+
+    await service.saveUserProfile(_profile());
+    await service.saveProgressEntry(progress);
+
+    final export = jsonDecode(await service.exportData()) as Map<String, dynamic>;
+
+    expect(export['schemaVersion'], 1);
+    expect(export['profile'], _profile().toJson());
+    expect(export['progress'], [progress.toJson()]);
+    expect(export.containsKey('secureStore'), isFalse);
+    expect(export['exportedAt'], isA<String>());
+  });
+
+  test('reset removes secure and legacy profile and progress data', () async {
+    SharedPreferences.setMockInitialValues({
+      'user_profile': jsonEncode(_profile().toJson()),
+      'progress_history': '[]',
+    });
+    final legacyPrefs = await SharedPreferences.getInstance();
+    final secureStore = InMemorySecureKeyValueStore();
+    await secureStore.write('user_profile', jsonEncode(_profile().toJson()));
+    await secureStore.write('progress_history', '[]');
+    await secureStore.write('future_auth_key', 'must-remain');
+    final service = StorageService.test(
+      secureStore: secureStore,
+      legacyPreferences: legacyPrefs,
+    );
+
+    await service.resetAll();
+
+    expect(await secureStore.containsKey('user_profile'), isFalse);
+    expect(await secureStore.containsKey('progress_history'), isFalse);
+    expect(await secureStore.containsKey('future_auth_key'), isTrue);
+    expect(legacyPrefs.containsKey('user_profile'), isFalse);
+    expect(legacyPrefs.containsKey('progress_history'), isFalse);
+  });
 }
 
 UserProfile _profile() {

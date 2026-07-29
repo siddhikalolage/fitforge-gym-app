@@ -8,3 +8,6 @@
 - Add continuous integration checks for formatting, analysis, and tests.
 - Add domain validation before profile and progress data is persisted.
 - Handle secure-storage failures without exposing platform error details or navigating after failed writes.
+- Add profile editing with validated secure persistence.
+- Add versioned local JSON export through the system share sheet.
+- Add privacy disclosure and confirmed local-data deletion coverage.

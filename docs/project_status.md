@@ -2,9 +2,9 @@
 
 ## Current Release Position
 
-FitForge AI is an Android-first, local-first MVP. The app currently supports onboarding, BMI calculation, rule-based workout and diet recommendations, weight progress logging, secure local storage, and profile reset.
+FitForge AI is an Android-first, local-first MVP. The app currently supports onboarding, BMI calculation, rule-based workout and diet recommendations, weight progress logging, secure local storage, profile editing, versioned local JSON export, and confirmed local-data deletion.
 
-It is not production-ready for public health-data use. Authentication, backend synchronization, Supabase RLS enforcement, profile editing, data export, expanded progress tracking, release signing, monitoring, and health-safety review remain incomplete. Domain validation rejects unsupported profile and progress values before secure persistence, and storage failures now use safe user-facing error states.
+It is not production-ready for public health-data use. Authentication, backend synchronization, Supabase RLS enforcement, expanded progress tracking, release signing, monitoring, and health-safety review remain incomplete. Domain validation rejects unsupported profile and progress values before secure persistence, and storage failures now use safe user-facing error states.
 
 ## Repository Baseline
 
@@ -26,7 +26,6 @@ Before merging a change:
 
 ## Next Approved Sequence
 
-1. Add profile editing, privacy controls, export, and deletion coverage.
-2. Create Supabase development infrastructure with Auth and RLS.
-3. Add local and Supabase repository implementations with offline fallback.
-4. Enable remote synchronization only after ownership and conflict tests pass.
+1. Create Supabase development infrastructure with Auth and RLS.
+2. Add local and Supabase repository implementations with offline fallback.
+3. Enable remote synchronization only after ownership and conflict tests pass.

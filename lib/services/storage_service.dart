@@ -24,6 +24,9 @@ class StorageServiceException implements Exception {
   static const loadProgress = StorageServiceException._(
     'Unable to load progress securely. Please try again.',
   );
+  static const export = StorageServiceException._(
+    'Unable to prepare your data export. Please try again.',
+  );
   static const reset = StorageServiceException._(
     'Unable to delete local data securely. Please try again.',
   );
@@ -157,10 +160,29 @@ class StorageService {
     }
   }
 
+  Future<String> exportData() async {
+    try {
+      final profile = await getUserProfile();
+      final progress = await getProgressHistory();
+      return const JsonEncoder.withIndent('  ').convert({
+        'schemaVersion': 1,
+        'exportedAt': DateTime.now().toUtc().toIso8601String(),
+        'profile': profile?.toJson(),
+        'progress': [
+          for (final entry in progress) entry.toJson(),
+        ],
+      });
+    } catch (error) {
+      if (error is StorageServiceException) rethrow;
+      throw StorageServiceException.export;
+    }
+  }
+
   Future<void> resetAll() async {
     try {
       final prefs = await _ready;
-      await _secureStore.deleteAll();
+      await _secureStore.delete(_userProfileKey);
+      await _secureStore.delete(_progressHistoryKey);
       await prefs.remove(_userProfileKey);
       await prefs.remove(_progressHistoryKey);
     } catch (error) {

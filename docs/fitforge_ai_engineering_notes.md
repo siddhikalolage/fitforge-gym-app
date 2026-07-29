@@ -38,7 +38,7 @@ The current Flutter app provides local onboarding, BMI calculation, personalized
 
 ## Next Recommended Increments
 
-1. Add unit and widget tests for profile parsing, storage recovery, onboarding validation, recommendation outputs, and dashboard progress logging.
+1. Add unit and widget tests for profile parsing, storage recovery, onboarding validation, recommendation outputs, dashboard progress logging, and profile editing.
 2. Introduce a cleaner folder structure with domain, data, and presentation boundaries before adding backend or AI integrations.
 3. Add structured models for workout plans, nutrition plans, recovery scores, and AI-generated outputs.
 4. Replace local-only persistence with repositories so secure storage and SharedPreferences migration remain implementation details.

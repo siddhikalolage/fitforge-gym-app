@@ -143,8 +143,7 @@ Future tabs should not be added casually. If features grow, use nested pages ins
 
 - No reusable component system.
 - No formal theme file.
-- No profile editing UX.
-- No data export/privacy screen.
+- Profile editing and privacy/data controls are now available in the profile screen.
 - Limited progress metrics.
 - No loading/error/empty state standards across all screens.
 - App label and Android identity still need production branding.

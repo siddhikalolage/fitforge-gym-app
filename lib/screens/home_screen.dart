@@ -120,7 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
       DashboardScreen(profile: _profile!),
       WorkoutScreen(profile: _profile!),
       DietScreen(profile: _profile!),
-      ProfileScreen(profile: _profile!),
+      ProfileScreen(
+        profile: _profile!,
+        onProfileUpdated: (profile) {
+          setState(() => _profile = profile);
+        },
+      ),
     ];
 
     return Scaffold(
