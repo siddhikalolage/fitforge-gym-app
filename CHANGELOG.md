@@ -11,3 +11,4 @@
 - Add profile editing with validated secure persistence.
 - Add versioned local JSON export through the system share sheet.
 - Add privacy disclosure and confirmed local-data deletion coverage.
+- Add a reviewed Supabase Auth/RLS foundation migration for profiles and progress.

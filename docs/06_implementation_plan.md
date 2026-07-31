@@ -124,14 +124,13 @@ Goal: introduce secure accounts and sync.
 
 Tasks:
 
-1. Create backend project.
-2. Add PostgreSQL schema.
-3. Add authentication.
-4. Add JWT access tokens and refresh tokens.
-5. Add RBAC roles: user, trainer, owner, admin.
-6. Add profile/progress sync APIs.
-7. Add OpenAPI documentation.
-8. Add rate limiting and audit logs.
+1. Apply the reviewed Supabase development migration.
+2. Configure Supabase Auth and verify the signup profile trigger.
+3. Test profile/progress RLS ownership and cascade deletion.
+4. Add local and Supabase repository implementations with offline fallback.
+5. Add RBAC roles only after role ownership policies are designed.
+6. Add profile/progress synchronization contracts.
+7. Add API documentation, rate limiting, and audit logs as separate reviewed work.
 
 Exit criteria:
 
@@ -181,10 +180,9 @@ Exit criteria:
 
 Recommended next sprint:
 
-1. Define Supabase development schema and migration ownership.
-2. Define Auth onboarding and account-deletion behavior.
-3. Write RLS policies for user-owned profile and progress rows.
-4. Add repository interfaces before connecting screens to Supabase.
-5. Run local Supabase security and ownership tests.
+1. Apply the migration in a dedicated Supabase development project.
+2. Verify Auth signup, profile completion, RLS ownership, and cascade deletion.
+3. Add repository interfaces before connecting screens to Supabase.
+4. Run local Supabase security and ownership tests.
 
 This sprint is small, necessary, and directly supports the goal of building a trustworthy Android startup product.

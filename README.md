@@ -54,6 +54,7 @@ flutter run -d chrome
 
 ## Immediate Next Work
 
-1. Configure release signing outside source control.
-2. Introduce Supabase Auth, RLS, and repository boundaries.
-3. Expand progress tracking for water, sleep, steps, workouts, and nutrition compliance.
+1. Apply and test the reviewed Supabase Auth/RLS migration in development.
+2. Introduce repository boundaries before Flutter remote integration.
+3. Configure release signing outside source control.
+4. Expand progress tracking for water, sleep, steps, workouts, and nutrition compliance.

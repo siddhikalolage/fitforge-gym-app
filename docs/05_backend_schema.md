@@ -6,13 +6,22 @@ This document defines a future backend data model for FitForge AI. The current M
 
 ## Database Choice
 
-Recommended primary database: PostgreSQL.
+Recommended primary database: Supabase Postgres.
 
 Recommended supporting services:
 
 - Redis for sessions, caching, queues, and rate limiting.
 - Object storage for profile images, exercise media, and uploaded progress media.
 - Analytics warehouse later if usage grows.
+
+## Supabase Foundation Scope
+
+The first migration uses Supabase Auth as the identity authority and creates only two user-owned public tables:
+
+- public.profiles, keyed directly to auth.users(id).
+- public.progress_entries, owned by auth.users(id) and unique per user/date.
+
+Both tables have authenticated-owner RLS policies, anonymous access revoked, database range checks, and cascade deletion from auth.users. The remaining table sketches below are future scope and must not be implemented without their own migration and RLS review.
 
 ## Roles
 
@@ -25,7 +34,7 @@ admin
 
 ## Core Tables
 
-### users
+### users (future conceptual model)
 
 Stores identity-level account data.
 
@@ -42,7 +51,7 @@ updated_at timestamptz not null
 last_login_at timestamptz nullable
 ```
 
-### user_profiles
+### user_profiles (superseded by public.profiles for the first migration)
 
 Stores health and personalization data.
 
@@ -184,7 +193,7 @@ created_at timestamptz not null
 
 ```text
 id uuid primary key
-user_id uuid references users(id)
+user_id uuid references auth.users(id) on delete cascade
 entry_date date not null
 weight_kg numeric nullable
 bmi numeric nullable
