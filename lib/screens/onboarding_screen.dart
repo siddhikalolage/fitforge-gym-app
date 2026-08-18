@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
-import '../services/storage_service.dart';
+import '../repositories/fitforge_repository.dart';
+import '../repositories/local_fitforge_repository.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final FitForgeRepository? repository;
+
+  const OnboardingScreen({super.key, this.repository});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -16,7 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
-  final _storageService = StorageService();
+  late final FitForgeRepository _repository;
 
   String _gender = 'male';
   String _activityLevel = 'sedentary';
@@ -27,6 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? LocalFitForgeRepository();
     _heightController.addListener(_refreshBmiPreview);
     _weightController.addListener(_refreshBmiPreview);
   }
@@ -97,8 +101,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
 
     try {
-      await _storageService.saveUserProfile(profile);
-    } on StorageServiceException catch (error) {
+      await _repository.saveUserProfile(profile);
+    } on RepositoryException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message)),
@@ -116,7 +120,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(repository: _repository),
+      ),
     );
   }
 

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/user_profile.dart';
-import '../services/storage_service.dart';
+import '../repositories/fitforge_repository.dart';
+import '../repositories/local_fitforge_repository.dart';
 import 'onboarding_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserProfile profile;
+  final FitForgeRepository? repository;
   final ValueChanged<UserProfile>? onProfileUpdated;
 
   const ProfileScreen({
     super.key,
     required this.profile,
+    this.repository,
     this.onProfileUpdated,
   });
 
@@ -19,8 +22,15 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final FitForgeRepository _repository;
   bool _savingProfile = false;
   bool _exportingData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repository = widget.repository ?? LocalFitForgeRepository();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 Text(
-                  '\${profile.age} years old',
+                  '${profile.age} years old',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
@@ -66,11 +76,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _profileRow('Height', '\${profile.height} cm', Icons.height),
+                  _profileRow('Height', '${profile.height} cm', Icons.height),
                   const Divider(color: Colors.white12),
                   _profileRow(
                     'Weight',
-                    '\${profile.weight} kg',
+                    '${profile.weight} kg',
                     Icons.monitor_weight,
                   ),
                   const Divider(color: Colors.white12),
@@ -87,8 +97,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     profile.goal == 'lose_weight'
                         ? 'Lose Weight'
                         : profile.goal == 'gain_muscle'
-                            ? 'Build Muscle'
-                            : 'Maintain',
+                        ? 'Build Muscle'
+                        : 'Maintain',
                     Icons.flag,
                   ),
                   const Divider(color: Colors.white12),
@@ -150,9 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: _exportingData
                           ? const SizedBox.square(
                               dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.ios_share),
                       label: Text(
@@ -229,17 +237,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _savingProfile = true);
     try {
-      await StorageService().saveUserProfile(updatedProfile);
+      await _repository.saveUserProfile(updatedProfile);
       if (!mounted) return;
       widget.onProfileUpdated?.call(updatedProfile);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated securely')),
-      );
-    } on StorageServiceException catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile updated securely')));
+    } on RepositoryException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } on ArgumentError {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -255,19 +263,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _exportData() async {
     setState(() => _exportingData = true);
     try {
-      final export = await StorageService().exportData();
+      final export = await _repository.exportData();
       if (!mounted) return;
       await SharePlus.instance.share(
-        ShareParams(
-          text: export,
-          subject: 'FitForge data export',
-        ),
+        ShareParams(text: export, subject: 'FitForge data export'),
       );
-    } on StorageServiceException catch (error) {
+    } on RepositoryException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } on Exception {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -301,18 +306,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             onPressed: () async {
               try {
-                final storage = StorageService();
-                await storage.resetAll();
+                await _repository.resetAll();
                 if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => OnboardingScreen(repository: _repository),
+                  ),
                   (_) => false,
                 );
-              } on StorageServiceException catch (error) {
+              } on RepositoryException catch (error) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(error.message)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(error.message)));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -350,10 +356,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     final profile = widget.profile;
     _nameController = TextEditingController(text: profile.name);
     _ageController = TextEditingController(text: profile.age.toString());
-    _heightController =
-        TextEditingController(text: profile.height.toString());
-    _weightController =
-        TextEditingController(text: profile.weight.toString());
+    _heightController = TextEditingController(text: profile.height.toString());
+    _weightController = TextEditingController(text: profile.weight.toString());
     _gender = profile.gender;
     _activityLevel = profile.activityLevel;
     _goal = profile.goal;
@@ -372,10 +376,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: const Color(0xFF1A1A2E),
-      title: const Text(
-        'Edit Profile',
-        style: TextStyle(color: Colors.white),
-      ),
+      title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -464,7 +465,10 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                       value: 'lose_weight',
                       child: Text('Lose weight'),
                     ),
-                    DropdownMenuItem(value: 'maintain', child: Text('Maintain')),
+                    DropdownMenuItem(
+                      value: 'maintain',
+                      child: Text('Maintain'),
+                    ),
                     DropdownMenuItem(
                       value: 'gain_muscle',
                       child: Text('Build muscle'),
@@ -491,10 +495,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        ElevatedButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }

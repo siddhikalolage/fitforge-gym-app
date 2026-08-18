@@ -2,38 +2,10 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/progress_entry.dart';
+import '../repositories/fitforge_repository.dart';
 import 'secure_key_value_store.dart';
 
-class StorageServiceException implements Exception {
-  final String message;
-
-  const StorageServiceException._(this.message);
-
-  static const initialization = StorageServiceException._(
-    'Secure local storage is unavailable. Please restart the app and try again.',
-  );
-  static const saveProfile = StorageServiceException._(
-    'Unable to save your profile securely. Please try again.',
-  );
-  static const loadProfile = StorageServiceException._(
-    'Unable to load your profile securely. Please try again.',
-  );
-  static const saveProgress = StorageServiceException._(
-    'Unable to save progress securely. Please try again.',
-  );
-  static const loadProgress = StorageServiceException._(
-    'Unable to load progress securely. Please try again.',
-  );
-  static const export = StorageServiceException._(
-    'Unable to prepare your data export. Please try again.',
-  );
-  static const reset = StorageServiceException._(
-    'Unable to delete local data securely. Please try again.',
-  );
-
-  @override
-  String toString() => 'StorageServiceException: $message';
-}
+typedef StorageServiceException = RepositoryException;
 
 class StorageService {
   static const String _userProfileKey = 'user_profile';

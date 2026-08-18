@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'repositories/fitforge_repository.dart';
+import 'repositories/local_fitforge_repository.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
-import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,27 +16,35 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  final storageService = StorageService();
+  final FitForgeRepository repository = LocalFitForgeRepository();
   var hasUser = false;
   String? startupError;
   try {
-    await storageService.init();
-    hasUser = await storageService.hasUserProfile();
-  } on StorageServiceException catch (error) {
+    await repository.init();
+    hasUser = await repository.hasUserProfile();
+  } on RepositoryException catch (error) {
     startupError = error.message;
   }
 
-  runApp(GymApp(hasUser: hasUser, startupError: startupError));
+  runApp(
+    GymApp(
+      hasUser: hasUser,
+      startupError: startupError,
+      repository: repository,
+    ),
+  );
 }
 
 class GymApp extends StatelessWidget {
   final bool hasUser;
   final String? startupError;
+  final FitForgeRepository? repository;
 
   const GymApp({
     super.key,
     required this.hasUser,
     this.startupError,
+    this.repository,
   });
 
   @override
@@ -83,7 +92,9 @@ class GymApp extends StatelessWidget {
         ),
       ),
       home: startupError == null
-          ? (hasUser ? const HomeScreen() : const OnboardingScreen())
+          ? (hasUser
+              ? HomeScreen(repository: repository)
+              : OnboardingScreen(repository: repository))
           : StorageFailureScreen(message: startupError!),
     );
   }

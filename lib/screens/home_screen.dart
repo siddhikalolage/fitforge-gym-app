@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
-import '../services/storage_service.dart';
+import '../repositories/fitforge_repository.dart';
+import '../repositories/local_fitforge_repository.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
 import 'workout_screen.dart';
@@ -8,14 +9,16 @@ import 'diet_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final FitForgeRepository? repository;
+
+  const HomeScreen({super.key, this.repository});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _storageService = StorageService();
+  late final FitForgeRepository _repository;
   UserProfile? _profile;
   bool _loading = true;
   String? _loadError;
@@ -24,19 +27,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? LocalFitForgeRepository();
     _loadProfile();
   }
 
   Future<void> _loadProfile() async {
     try {
-      final profile = await _storageService.getUserProfile();
+      final profile = await _repository.getUserProfile();
       if (!mounted) return;
       setState(() {
         _profile = profile;
         _loadError = null;
         _loading = false;
       });
-    } on StorageServiceException catch (error) {
+    } on RepositoryException catch (error) {
       if (!mounted) return;
       setState(() {
         _loadError = error.message;
@@ -48,9 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_loadError != null) {
@@ -104,7 +106,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (_) => const OnboardingScreen(),
+                      builder: (_) => OnboardingScreen(repository: _repository),
+                      // Keep the active repository boundary across flows.
                     ),
                   );
                 },
@@ -117,11 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final screens = [
-      DashboardScreen(profile: _profile!),
+      DashboardScreen(profile: _profile!, repository: _repository),
       WorkoutScreen(profile: _profile!),
       DietScreen(profile: _profile!),
       ProfileScreen(
         profile: _profile!,
+        repository: _repository,
         onProfileUpdated: (profile) {
           setState(() => _profile = profile);
         },
@@ -143,14 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.fitness_center),
             label: 'Workout',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant),
-            label: 'Diet',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.restaurant), label: 'Diet'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

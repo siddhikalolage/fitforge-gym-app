@@ -3,20 +3,26 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/user_profile.dart';
 import '../models/progress_entry.dart';
-import '../services/storage_service.dart';
+import '../repositories/fitforge_repository.dart';
+import '../repositories/local_fitforge_repository.dart';
 import '../services/recommendation_engine.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserProfile profile;
+  final FitForgeRepository? repository;
 
-  const DashboardScreen({super.key, required this.profile});
+  const DashboardScreen({
+    super.key,
+    required this.profile,
+    this.repository,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final _storageService = StorageService();
+  late final FitForgeRepository _repository;
   List<ProgressEntry> _history = [];
   bool _loading = true;
   String? _historyError;
@@ -24,19 +30,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? LocalFitForgeRepository();
     _loadHistory();
   }
 
   Future<void> _loadHistory() async {
     try {
-      final history = await _storageService.getProgressHistory();
+      final history = await _repository.getProgressHistory();
       if (!mounted) return;
       setState(() {
         _history = history;
         _historyError = null;
         _loading = false;
       });
-    } on StorageServiceException catch (error) {
+    } on RepositoryException catch (error) {
       if (!mounted) return;
       setState(() {
         _history = [];
@@ -123,11 +130,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 );
 
                 try {
-                  await _storageService.saveProgressEntry(entry);
+                  await _repository.saveProgressEntry(entry);
                   if (!mounted || !ctx.mounted) return;
                   Navigator.pop(ctx);
                   await _loadHistory();
-                } on StorageServiceException catch (error) {
+                } on RepositoryException catch (error) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(error.message)),
