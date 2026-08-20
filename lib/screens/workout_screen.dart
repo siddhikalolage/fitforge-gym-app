@@ -1,230 +1,314 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../models/user_profile.dart';
+
 import '../models/workout.dart';
-import '../services/recommendation_engine.dart';
+import '../models/workout_session.dart';
+import '../services/workout_session_service.dart';
 
-class WorkoutScreen extends StatefulWidget {
-  final UserProfile profile;
+class WorkoutSessionScreen extends StatefulWidget {
+  final WorkoutPlan plan;
 
-  const WorkoutScreen({super.key, required this.profile});
+  const WorkoutSessionScreen({super.key, required this.plan});
 
   @override
-  State<WorkoutScreen> createState() => _WorkoutScreenState();
+  State<WorkoutSessionScreen> createState() => _WorkoutSessionScreenState();
 }
 
-class _WorkoutScreenState extends State<WorkoutScreen> {
-  late List<WorkoutPlan> _plans;
-  int _selectedDay = DateTime.now().weekday - 1; // 0 = Monday
+class _WorkoutSessionScreenState extends State<WorkoutSessionScreen> {
+  late WorkoutSession _session;
+
+  final WorkoutSessionService _sessionService = WorkoutSessionService();
+
+  int _currentExercise = 0;
+  int _restSecondsRemaining = 0;
+
+  Timer? _restTimer;
 
   @override
   void initState() {
     super.initState();
-    _plans = RecommendationEngine.generateWorkoutPlan(widget.profile);
+
+    _session = _sessionService.createSession(widget.plan);
+  }
+
+  @override
+  void dispose() {
+    _restTimer?.cancel();
+    super.dispose();
+  }
+
+  Workout get _currentWorkout {
+    return widget.plan.workouts[_currentExercise];
+  }
+
+  WorkoutExerciseProgress get _currentProgress {
+    return _session.exercises[_currentExercise];
+  }
+
+  void _completeSet() {
+    _sessionService.completeSet(_session, _currentExercise);
+
+    if (_currentProgress.isCompleted) {
+      if (_currentExercise < widget.plan.workouts.length - 1) {
+        setState(() {
+          _currentExercise++;
+          _startRest(_currentWorkout.restSeconds);
+        });
+      } else {
+        setState(() {});
+        _showWorkoutComplete();
+      }
+
+      return;
+    }
+
+    setState(() {});
+    _startRest(_currentWorkout.restSeconds);
+  }
+
+  void _startRest(int seconds) {
+    _restTimer?.cancel();
+
+    if (seconds <= 0) {
+      setState(() {
+        _restSecondsRemaining = 0;
+      });
+      return;
+    }
+
+    setState(() {
+      _restSecondsRemaining = seconds;
+    });
+
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_restSecondsRemaining <= 1) {
+        timer.cancel();
+
+        setState(() {
+          _restSecondsRemaining = 0;
+        });
+
+        return;
+      }
+
+      setState(() {
+        _restSecondsRemaining--;
+      });
+    });
+  }
+
+  void _skipRest() {
+    _restTimer?.cancel();
+
+    setState(() {
+      _restSecondsRemaining = 0;
+    });
+  }
+
+  void _showWorkoutComplete() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Workout Complete 🎉'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.emoji_events,
+                size: 64,
+                color: Colors.orangeAccent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '${_session.completedSets}/${_session.totalSets} sets completed',
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Great work! Your workout has been completed.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Finish'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final todayPlan =
-        _selectedDay < _plans.length ? _plans[_selectedDay] : null;
-    if (todayPlan == null) return const SizedBox();
+    final workout = _currentWorkout;
+    final progress = _currentProgress;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout Plan')),
+      appBar: AppBar(title: Text(widget.plan.day)),
       body: Column(
         children: [
-          Container(
-            height: 100,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _plans.length,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemBuilder: (_, i) {
-                final plan = _plans[i];
-                final isSelected = _selectedDay == i;
-                final isRest = plan.workouts.isEmpty;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedDay = i),
-                  child: Container(
-                    width: 80,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.orangeAccent.withValues(alpha: 0.3)
-                          : Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color:
-                            isSelected ? Colors.orangeAccent : Colors.white12,
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          plan.day.substring(0, 3),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.orangeAccent
-                                : Colors.white70,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Icon(
-                          isRest ? Icons.bedtime : Icons.fitness_center,
-                          size: 20,
-                          color:
-                              isRest ? Colors.blue[300] : Colors.orangeAccent,
-                        ),
-                      ],
+          LinearProgressIndicator(value: _session.progress, minHeight: 5),
+
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  widget.plan.focus,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'Exercise ${_currentExercise + 1} of '
+                  '${widget.plan.workouts.length}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+
+                const SizedBox(height: 28),
+
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.play_circle_outline,
+                      size: 72,
+                      color: Colors.orangeAccent,
                     ),
                   ),
-                );
-              },
+                ),
+
+                const SizedBox(height: 24),
+
+                Text(
+                  workout.name,
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  '${workout.sets} sets × ${workout.reps} reps',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+
+                const SizedBox(height: 24),
+
+                _buildSetProgress(progress),
+
+                const SizedBox(height: 24),
+
+                if (_restSecondsRemaining > 0) _buildRestTimer(),
+
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _restSecondsRemaining > 0 ? null : _completeSet,
+                    icon: const Icon(Icons.check),
+                    label: Text(
+                      progress.isCompleted
+                          ? 'Exercise Completed'
+                          : 'Complete Set',
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (todayPlan.workouts.isEmpty)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.bedtime, size: 80, color: Colors.blue[300]),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Rest Day",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(color: Colors.blue[300]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Recovery is essential for growth!\nStretch, hydrate, and get good sleep.",
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: todayPlan.workouts.length + 1,
-                itemBuilder: (_, i) {
-                  if (i == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            todayPlan.focus,
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${todayPlan.workouts.length} exercises',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  final workout = todayPlan.workouts[i - 1];
-                  return _workoutCard(workout, i);
-                },
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _workoutCard(Workout workout, int index) {
-    IconData icon;
-    switch (workout.category) {
-      case 'push':
-        icon = Icons.arrow_upward;
-        break;
-      case 'pull':
-        icon = Icons.arrow_downward;
-        break;
-      case 'legs':
-        icon = Icons.directions_walk;
-        break;
-      case 'core':
-        icon = Icons.accessibility_new;
-        break;
-      case 'cardio':
-        icon = Icons.directions_run;
-        break;
-      default:
-        icon = Icons.fitness_center;
-    }
+  Widget _buildSetProgress(WorkoutExerciseProgress progress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Sets', style: Theme.of(context).textTheme.headlineMedium),
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.orangeAccent.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.orangeAccent),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    workout.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+        const SizedBox(height: 12),
+
+        Row(
+          children: List.generate(progress.totalSets, (index) {
+            final completed = index < progress.completedSets;
+
+            return Expanded(
+              child: Container(
+                height: 48,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: completed
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: completed ? Colors.green : Colors.white12,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${workout.sets} sets x ${workout.reps} reps - ${workout.restSeconds}s rest',
-                    style: const TextStyle(color: Colors.white60, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: workout.difficulty == 'beginner'
-                    ? Colors.green.withValues(alpha: 0.2)
-                    : Colors.orange.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                workout.difficulty,
-                style: TextStyle(
-                  color: workout.difficulty == 'beginner'
-                      ? Colors.green[300]
-                      : Colors.orange[300],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                ),
+                child: Center(
+                  child: completed
+                      ? const Icon(Icons.check, color: Colors.green)
+                      : Text('Set ${index + 1}'),
                 ),
               ),
-            ),
-          ],
+            );
+          }),
         ),
+      ],
+    );
+  }
+
+  Widget _buildRestTimer() {
+    final minutes = _restSecondsRemaining ~/ 60;
+    final seconds = _restSecondsRemaining % 60;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          const Text('REST'),
+
+          const SizedBox(height: 8),
+
+          Text(
+            '${minutes.toString().padLeft(2, '0')}:'
+            '${seconds.toString().padLeft(2, '0')}',
+            style: const TextStyle(
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
+              color: Colors.orangeAccent,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          TextButton(onPressed: _skipRest, child: const Text('Skip Rest')),
+        ],
       ),
     );
   }

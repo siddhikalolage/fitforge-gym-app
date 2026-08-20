@@ -1,18 +1,24 @@
 class Workout {
+  final String exerciseId;
   final String name;
-  final String category; // push, pull, legs, core, cardio
+  final String category;
   final int sets;
   final int reps;
   final int restSeconds;
   final String difficulty;
+  final String description;
+  final String? demoUrl;
 
-  Workout({
+  const Workout({
+    required this.exerciseId,
     required this.name,
     required this.category,
     required this.sets,
     required this.reps,
     required this.restSeconds,
     required this.difficulty,
+    required this.description,
+    this.demoUrl,
   });
 }
 
@@ -21,7 +27,7 @@ class WorkoutPlan {
   final List<Workout> workouts;
   final String focus;
 
-  WorkoutPlan({
+  const WorkoutPlan({
     required this.day,
     required this.workouts,
     required this.focus,
@@ -33,9 +39,9 @@ class Meal {
   final String time;
   final List<String> foods;
   final int calories;
-  final String macros; // e.g. "P:30g C:40g F:10g"
+  final String macros;
 
-  Meal({
+  const Meal({
     required this.name,
     required this.time,
     required this.foods,
@@ -49,7 +55,7 @@ class DietPlan {
   final List<Meal> meals;
   final String notes;
 
-  DietPlan({
+  const DietPlan({
     required this.dailyCalories,
     required this.meals,
     required this.notes,
@@ -63,7 +69,7 @@ class DailyTask {
   final int? steps;
   final String? notes;
 
-  DailyTask({
+  const DailyTask({
     this.workoutCompleted = false,
     this.dietFollowed = false,
     this.waterIntake,

@@ -4,7 +4,7 @@ import '../repositories/fitforge_repository.dart';
 import '../repositories/local_fitforge_repository.dart';
 import 'dashboard_screen.dart';
 import 'onboarding_screen.dart';
-import 'workout_screen.dart';
+import 'workout_plan_screen.dart';
 import 'diet_screen.dart';
 import 'profile_screen.dart';
 
@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final screens = [
       DashboardScreen(profile: _profile!, repository: _repository),
-      WorkoutScreen(profile: _profile!),
+      WorkoutPlanScreen(profile: _profile!),
       DietScreen(profile: _profile!),
       ProfileScreen(
         profile: _profile!,
